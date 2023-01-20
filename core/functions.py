@@ -38,12 +38,8 @@ class FunctionDeletion(BaseModel):
         schema_extra = {"example": {"name": "hello"}}
 
 
-class FunctionUpdate(BaseModel):
+class FunctionUpdate(FunctionCreation):
     """Function update model."""
-
-    name: str
-
-    code: str
 
     class Config:
         """Config."""
@@ -122,6 +118,17 @@ def update_function(function: FunctionUpdate) -> str:
     try:
         with open(f"functions/{function.name}.py", "w") as f:
             f.write(function.code)
+
+        with open("functions.toml", "r") as f:
+
+            functions = tomlkit.parse(f.read()).get("functions", [])
+
+            for fn in functions:
+                if fn["name"] == function.name:
+                    fn["code"] = function.code
+
+            with open("functions.toml", "w") as _f:
+                _f.write(tomlkit.dumps({"functions": functions}))
 
         return "Function has been updated"
     except FileNotFoundError as e:
