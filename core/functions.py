@@ -1,11 +1,21 @@
 """A module for functions management."""
-import os
+from pathlib import Path
+from typing import TypedDict
 
-import tomlkit
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 router = APIRouter()
+
+root_path = Path(__file__).parent.parent
+
+functions_path = root_path.joinpath("functions")
+
+
+class Response(TypedDict):
+    """Response type for dict."""
+
+    detail: str
 
 
 class FunctionCreation(BaseModel):
@@ -21,9 +31,8 @@ class FunctionCreation(BaseModel):
         schema_extra = {
             "example": {
                 "name": "hello",
-                "code": "from fastapi import APIRouter\n\nrouter = APIRouter()"
-                "\n\n\n@router.post('/')\ndef hello() -> str:\n\n\treturn 'hello'\n\n",
-            }
+                "code": "def get() -> str:\n\n\treturn 'hello'\n\n",
+            },
         }
 
 
@@ -47,89 +56,67 @@ class FunctionUpdate(FunctionCreation):
         schema_extra = {
             "example": {
                 "name": "hello",
-                "code": "from fastapi import APIRouter\n\nrouter = APIRouter()"
-                "\n\n\n"
-                "@router.post('/')\ndef hello() -> str:\n\n\treturn 'hello world'\n\n",
-            }
+                "code": "def get() -> str:\n\n\treturn 'hello world'\n\n",
+            },
         }
 
 
 @router.post("/create")
-def create(function: FunctionCreation) -> str:
-    """Create a function."""
-    with open("functions.toml", "r+") as f:
-        functions = tomlkit.parse(f.read()).get("functions", [])
+def create(function: FunctionCreation) -> Response:
+    """Create new function."""
+    fn = functions_path.joinpath(f"{function.name}.py")
 
-        if function.name in [f["name"] for f in functions]:
-            raise HTTPException(status_code=400, detail="Function already exists")
+    if fn.exists():
+        raise HTTPException(status_code=400, detail="Function already exists")
 
-        functions.append({"name": function.name, "code": function.code})
-
-        f.write(tomlkit.dumps({"functions": functions}))
-
-    with open(f"functions/{function.name}.py", "w") as f:
+    with Path.open(fn, "w") as f:
         f.write(function.code)
 
-    return "Function has been created"
-
-
-@router.post("/delete")
-def delete(function: FunctionDeletion) -> str:
-    """Delete a function."""
-    with open("functions.toml", "r") as f:
-        functions = tomlkit.parse(f.read()).get("functions", [])
-
-        if function.name not in [f["name"] for f in functions]:
-            raise HTTPException(status_code=400, detail="Function does not exist")
-
-        functions = [f for f in functions if f["name"] != function.name]
-
-        with open("functions.toml", "w") as _f:
-            data = {"functions": functions} if functions else {}
-            _f.write(tomlkit.dumps(data))
-
-    os.remove(f"functions/{function.name}.py")
-
-    return "Function has been deleted"
-
-
-@router.get("/list")
-def get_functions() -> list:
-    """Get functions."""
-    with open("functions.toml", "r") as f:
-        functions = tomlkit.parse(f.read()).get("functions", [])
-
-        return [{"name": f["name"], "lang": "python"} for f in functions]
-
-
-@router.get("/get")
-def get_function(name: str) -> dict:
-    """Get a function."""
-    try:
-        with open(f"functions/{name}.py") as f:
-            return {"code": f.read()}
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=400, detail="Function does not exist") from e
+    return {"detail": "Function has been created"}
 
 
 @router.post("/update")
-def update_function(function: FunctionUpdate) -> str:
+def update_function(function: FunctionUpdate) -> Response:
     """Update a function."""
+    fn = functions_path.joinpath(f"{function.name}.py")
+
+    if not fn.exists():
+        raise HTTPException(status_code=400, detail="Function does not exist")
+
+    with Path.open(fn, "w") as f:
+        f.write(function.code)
+
+    return {"detail": "Function has been updated"}
+
+
+@router.post("/delete")
+def delete(function: FunctionDeletion) -> Response:
+    """Delete a function."""
+    fn = functions_path.joinpath(f"{function.name}.py")
+
+    if not fn.exists():
+        raise HTTPException(status_code=400, detail="Function does not exist")
+
+    Path.unlink(root_path.joinpath(f"functions/{function.name}.py"))
+
+    return {"detail": "Function has been deleted"}
+
+
+@router.get("/list")
+def get_functions() -> list[str]:
+    """Get functions."""
+    return [
+        fn.name.replace(".py", "")
+        for fn in functions_path.glob("*.py")
+        if fn.is_file() and fn.name != "__init__.py"
+    ]
+
+
+@router.get("/get")
+def get_function(name: str) -> Response:
+    """Get a function."""
     try:
-        with open(f"functions/{function.name}.py", "w") as f:
-            f.write(function.code)
-
-        with open("functions.toml", "r") as f:
-
-            functions = tomlkit.parse(f.read()).get("functions", [])
-
-            for fn in functions:
-                if fn["name"] == function.name:
-                    fn["code"] = function.code
-
-            with open("functions.toml", "w") as _f:
-                _f.write(tomlkit.dumps({"functions": functions}))
-
-        return "Function has been updated"
+        with Path.open(functions_path.joinpath(f"{name}.py")) as f:
+            return {"detail": f.read()}
     except FileNotFoundError as e:
         raise HTTPException(status_code=400, detail="Function does not exist") from e

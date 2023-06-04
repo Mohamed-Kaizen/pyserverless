@@ -1,4 +1,6 @@
 """The main file for the project."""
+import importlib
+import logging
 import os
 
 import uvicorn
@@ -8,6 +10,8 @@ from starlette.middleware.cors import CORSMiddleware
 from core.functions import router as functions_router
 from core.packages import router as packages_router
 from core.settings import settings
+
+logger = logging.getLogger()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -42,21 +46,25 @@ async def get_functions() -> None:
             module = file.split(".")[0]
 
             try:
-                router = __import__(f"functions.{module}", fromlist=["router"]).router
+                fn = importlib.import_module(f"functions.{module}")
 
-                app.include_router(router, prefix=f"/{module}", tags=["functions"])
+                for method in ["get", "post", "patch", "put", "delete"]:
+                    if hasattr(fn, method):
+                        app.add_api_route(
+                            f"/{module}",
+                            getattr(fn, method),
+                            methods=[method.upper()],
+                            tags=[f"{module}"],
+                        )
 
             except ImportError:
-                print(f"Failed to import {module}")
-
-            except AttributeError:
-                print("Router should be a APIRouter instance")
+                logger.exception("Import error")
 
 
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
+        host="0.0.0.0",  # noqa
         port=settings.PORT,
         log_level="info",
         reload=True,
