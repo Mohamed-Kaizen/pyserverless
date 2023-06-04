@@ -11,6 +11,10 @@ root_path = Path(__file__).parent.parent
 
 functions_path = root_path.joinpath("functions")
 
+logos_path = root_path.joinpath("logos")
+
+logos_path.mkdir(exist_ok=True)
+
 
 class Response(TypedDict):
     """Response type for dict."""
@@ -72,6 +76,8 @@ def create(function: FunctionCreation) -> Response:
     with Path.open(fn, "w") as f:
         f.write(function.code)
 
+    logos_path.joinpath(f"{function.name}.json").touch(exist_ok=True)
+
     return {"detail": "Function has been created"}
 
 
@@ -94,10 +100,9 @@ def delete(function: FunctionDeletion) -> Response:
     """Delete a function."""
     fn = functions_path.joinpath(f"{function.name}.py")
 
-    if not fn.exists():
-        raise HTTPException(status_code=400, detail="Function does not exist")
+    Path.unlink(fn, missing_ok=True)
 
-    Path.unlink(root_path.joinpath(f"functions/{function.name}.py"))
+    logos_path.joinpath(f"{function.name}.json").unlink(missing_ok=True)
 
     return {"detail": "Function has been deleted"}
 
