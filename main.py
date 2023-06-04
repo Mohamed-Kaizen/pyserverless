@@ -4,7 +4,8 @@ import logging
 import os
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, HTTPException, Security
+from fastapi.security.api_key import APIKeyHeader
 from starlette.middleware.cors import CORSMiddleware
 
 from core.functions import router as functions_router
@@ -30,11 +31,27 @@ app.add_middleware(
     allow_headers=settings.CORS_ALLOW_HEADERS,
 )
 
-app.include_router(packages_router, prefix="/packages", tags=["packages"])
+api_key_header = APIKeyHeader(name="x-api-key")
+
+
+def admin(api_key: str = Security(api_key_header)) -> None:  # noqa
+    """Allow routes only to be accessed by admin."""
+    if api_key != settings.SECRET_KEY:
+        raise HTTPException(status_code=401, detail="invalid api key")
+
+
+app.include_router(
+    packages_router,
+    prefix="/packages",
+    tags=["packages"],
+    dependencies=[Depends(admin)],
+)
+
 app.include_router(
     functions_router,
     prefix="/functions-management",
     tags=["functions management"],
+    dependencies=[Depends(admin)],
 )
 
 
