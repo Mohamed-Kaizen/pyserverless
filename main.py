@@ -5,9 +5,9 @@ import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from core.functions import router as functions_router  # noqa: I202
-from core.packages import router as packages_router  # noqa: I202
-from core.settings import settings  # noqa: I202
+from core.functions import router as functions_router
+from core.packages import router as packages_router
+from core.settings import settings
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -28,7 +28,9 @@ app.add_middleware(
 
 app.include_router(packages_router, prefix="/packages", tags=["packages"])
 app.include_router(
-    functions_router, prefix="/functions-management", tags=["functions management"]
+    functions_router,
+    prefix="/functions-management",
+    tags=["functions management"],
 )
 
 
@@ -36,9 +38,7 @@ app.include_router(
 async def get_functions() -> None:
     """Get all the functions."""
     for file in os.listdir("functions"):
-
         if file.endswith(".py") and file != "__init__.py":
-
             module = file.split(".")[0]
 
             try:
