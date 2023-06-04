@@ -31,6 +31,8 @@ class Settings(BaseSettings):
 
     CORS_ALLOW_CREDENTIALS: bool = True
 
+    SECRET_KEY: str = "secret"
+
     class Config:
         """Override the default config."""
 
