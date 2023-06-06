@@ -6,6 +6,8 @@ from typing import TypedDict
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from core.helpers import LogData, Logs
+
 router = APIRouter()
 
 root_path = Path(__file__).parent.parent
@@ -127,3 +129,17 @@ def get_function(name: str) -> Response:
             return {"detail": f.read()}
     except FileNotFoundError as e:
         raise HTTPException(status_code=400, detail="Function does not exist") from e
+
+
+@router.get("/logs")
+def get_logs(fn_name: str) -> list[LogData]:
+    """Get all logs of function."""
+    fn_log_path = Path(f"logs/{fn_name}.json")
+
+    if not fn_log_path.exists():
+        raise HTTPException(status_code=400, detail="Log does not exist")
+
+    with Path.open(f"logs/{fn_name}.json", "r") as fr:
+        data = json.load(fr)
+
+        return Logs(**data).logs

@@ -298,4 +298,6 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+logs
+
 # End of https://www.gitignore.io/api/venv,osx,linux,macos,dotenv,python,windows,pycharm+all,visualstudiocode
