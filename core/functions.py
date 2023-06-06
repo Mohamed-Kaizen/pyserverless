@@ -1,4 +1,5 @@
 """A module for functions management."""
+import json
 from pathlib import Path
 from typing import TypedDict
 
@@ -11,9 +12,9 @@ root_path = Path(__file__).parent.parent
 
 functions_path = root_path.joinpath("functions")
 
-logos_path = root_path.joinpath("logos")
+logs_path = root_path.joinpath("logs")
 
-logos_path.mkdir(exist_ok=True)
+logs_path.mkdir(exist_ok=True)
 
 
 class Response(TypedDict):
@@ -76,7 +77,8 @@ def create(function: FunctionCreation) -> Response:
     with Path.open(fn, "w") as f:
         f.write(function.code)
 
-    logos_path.joinpath(f"{function.name}.json").touch(exist_ok=True)
+    with Path.open(logs_path.joinpath(f"{function.name}.json"), "w") as f:
+        json.dump({"logs": []}, f)
 
     return {"detail": "Function has been created"}
 
@@ -102,7 +104,7 @@ def delete(function: FunctionDeletion) -> Response:
 
     Path.unlink(fn, missing_ok=True)
 
-    logos_path.joinpath(f"{function.name}.json").unlink(missing_ok=True)
+    logs_path.joinpath(f"{function.name}.json").unlink(missing_ok=True)
 
     return {"detail": "Function has been deleted"}
 
