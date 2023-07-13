@@ -1,9 +1,14 @@
 """Settings for the project."""
-from pydantic import BaseSettings
+
+from typing import ClassVar
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Base Settings."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     PROJECT_NAME: str = "Serverless"
 
@@ -21,22 +26,17 @@ class Settings(BaseSettings):
 
     OPENAPI_URL: str = "/openapi.json"
 
-    ALLOWED_HOSTS: list[str] = ["*"]
+    ALLOWED_HOSTS: ClassVar[list[str]] = ["*"]
 
-    CORS_ORIGINS: list[str] = ["*"]
+    CORS_ORIGINS: ClassVar[list[str]] = ["*"]
 
-    CORS_ALLOW_METHODS: list[str] = ["*"]
+    CORS_ALLOW_METHODS: ClassVar[list[str]] = ["*"]
 
-    CORS_ALLOW_HEADERS: list[str] = ["*"]
+    CORS_ALLOW_HEADERS: ClassVar[list[str]] = ["*"]
 
     CORS_ALLOW_CREDENTIALS: bool = True
 
     SECRET_KEY: str = "secret"
-
-    class Config:
-        """Override the default config."""
-
-        env_file = ".env"
 
 
 settings = Settings()

@@ -1,10 +1,10 @@
 """A module for functions management."""
 import json
 from pathlib import Path
-from typing import TypedDict
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing_extensions import TypedDict
 
 from core.helpers import LogData, Logs
 
@@ -28,30 +28,26 @@ class Response(TypedDict):
 class FunctionCreation(BaseModel):
     """Function creation model."""
 
-    name: str
+    name: str = Field(
+        json_schema_extra={"example": "hello"},
+        description="Function name",
+    )
 
-    code: str
-
-    class Config:
-        """Config."""
-
-        schema_extra = {
-            "example": {
-                "name": "hello",
-                "code": "def get() -> str:\n\n\treturn 'hello'\n\n",
-            },
-        }
+    code: str = Field(
+        json_schema_extra={
+            "example": "def get() -> str:\n\n\treturn 'hello'\n\n",
+        },
+        description="Function code",
+    )
 
 
 class FunctionDeletion(BaseModel):
     """Function deletion model."""
 
-    name: str
-
-    class Config:
-        """Config."""
-
-        schema_extra = {"example": {"name": "hello"}}
+    name: str = Field(
+        json_schema_extra={"example": "hello"},
+        description="Function name",
+    )
 
 
 class FunctionUpdate(FunctionCreation):
@@ -60,7 +56,7 @@ class FunctionUpdate(FunctionCreation):
     class Config:
         """Config."""
 
-        schema_extra = {
+        json_schema_extra = {  # noqa
             "example": {
                 "name": "hello",
                 "code": "def get() -> str:\n\n\treturn 'hello world'\n\n",
